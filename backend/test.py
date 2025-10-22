@@ -1,11 +1,31 @@
 import os
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 import pika
 import psycopg2
-from http.server import HTTPServer, BaseHTTPRequestHandler
 
-# Configuración
+app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 RABBITMQ_URL = os.getenv('RABBITMQ_URL', 'amqp://user:pass@rabbitmq:5672/')
 DATABASE_URL = os.getenv('DATABASE_URL', 'postgresql://postgres:postgres@postgres:5432/smartroute')
+
+class TravelRequest(BaseModel):
+    prompt: str
+
+class TravelRecommendation(BaseModel):
+    destination: str
+    weather: str | None
+    activities: list[str]
+    hotels: list[str]
 
 def test_rabbitmq():
     """Prueba básica de RabbitMQ"""
@@ -23,7 +43,6 @@ def test_rabbitmq():
 def test_postgres():
     """Prueba básica de PostgreSQL"""
     try:
-        # Convertir formato SQLAlchemy a psycopg2
         db_url = DATABASE_URL.replace('postgresql+psycopg2://', 'postgresql://')
         conn = psycopg2.connect(db_url)
         cursor = conn.cursor()
@@ -45,7 +64,7 @@ def send_message_to_rabbit(message):
         connection.close()
         return f"✅ Mensaje enviado: {message}"
     except Exception as e:
-        return f"❌ Error: {str(e)}"
+        return f"❌ Error al enviar: {str(e)}"
 
 def read_messages_from_rabbit():
     """Lee mensajes de RabbitMQ"""
@@ -56,7 +75,7 @@ def read_messages_from_rabbit():
         channel.queue_declare(queue='messages')
         
         messages = []
-        for i in range(10):  # Lee hasta 10 mensajes
+        for i in range(10):
             method, properties, body = channel.basic_get(queue='messages', auto_ack=True)
             if body:
                 messages.append(body.decode())
@@ -70,80 +89,85 @@ def read_messages_from_rabbit():
         else:
             return "📭 No hay mensajes en la cola"
     except Exception as e:
-        return f"❌ Error: {str(e)}"
+        return f"❌ Error al leer: {str(e)}"
 
-class Handler(BaseHTTPRequestHandler):
-    def do_GET(self):
-        if self.path == '/health':
-            rabbit = test_rabbitmq()
-            postgres = test_postgres()
-            
-            response = f"""
-            <html>
-            <body>
-                <h1>SmartRoute - Connection Test</h1>
-                <p>{rabbit}</p>
-                <p>{postgres}</p>
-                <hr>
-                <p><a href="/rabbit/send?msg=Hola">Enviar mensaje a RabbitMQ</a></p>
-                <p><a href="/rabbit/read">Leer mensajes de RabbitMQ</a></p>
-            </body>
-            </html>
-            """
-            
-            self.send_response(200)
-            self.send_header('Content-type', 'text/html')
-            self.end_headers()
-            self.wfile.write(response.encode())
-            
-        elif self.path.startswith('/rabbit/send'):
-            # Extraer mensaje del query string
-            if '?msg=' in self.path:
-                message = self.path.split('?msg=')[1]
-            else:
-                message = 'Mensaje de prueba'
-            
-            result = send_message_to_rabbit(message)
-            
-            response = f"""
-            <html>
-            <body>
-                <h1>Enviar Mensaje a RabbitMQ</h1>
-                <p>{result}</p>
-                <p><a href="/health">Volver</a></p>
-            </body>
-            </html>
-            """
-            
-            self.send_response(200)
-            self.send_header('Content-type', 'text/html')
-            self.end_headers()
-            self.wfile.write(response.encode())
-            
-        elif self.path == '/rabbit/read':
-            result = read_messages_from_rabbit()
-            
-            response = f"""
-            <html>
-            <body>
-                <h1>Leer Mensajes de RabbitMQ</h1>
-                <p>{result}</p>
-                <p><a href="/health">Volver</a></p>
-            </body>
-            </html>
-            """
-            
-            self.send_response(200)
-            self.send_header('Content-type', 'text/html')
-            self.end_headers()
-            self.wfile.write(response.encode())
-            
-        else:
-            self.send_response(404)
-            self.end_headers()
+@app.post("/api/travel-recommendations")
+async def get_recommendations(request: TravelRequest) -> TravelRecommendation:
+    prompt = request.prompt.lower()
+    
+    # Si el prompt contiene "test" o "conexion", ejecutar pruebas
+    if "test" in prompt or "conexion" in prompt or "conexión" in prompt:
+        postgres_status = test_postgres()
+        rabbit_status = test_rabbitmq()
+        
+        activities = [postgres_status, rabbit_status]
+        
+        # Agregar pruebas adicionales según el prompt
+        if "enviar" in prompt or "send" in prompt:
+            send_result = send_message_to_rabbit("Prueba desde frontend")
+            activities.append(send_result)
+        
+        if "leer" in prompt or "read" in prompt:
+            read_result = read_messages_from_rabbit()
+            activities.append(read_result)
+        
+        return TravelRecommendation(
+            destination="Tests de Conexión",
+            weather=None,
+            activities=activities,
+            hotels=[]
+        )
+    
+    # Recomendaciones normales de viajes
+    if "playa" in prompt or "mar" in prompt:
+        return TravelRecommendation(
+            destination="Cartagena de Indias, Colombia",
+            weather="Soleado y cálido, 28-32°C. Perfecto para disfrutar del mar Caribe.",
+            activities=[
+                "Explorar la Ciudad Amurallada y sus calles coloniales",
+                "Snorkel en las Islas del Rosario",
+                "Disfrutar de la gastronomía caribeña en Getsemaní",
+                "Paseo en velero al atardecer"
+            ],
+            hotels=[
+                "Hotel Boutique Casa del Arzobispado - Centro histórico con encanto colonial",
+                "Hilton Cartagena - Resort frente al mar con spa",
+                "Hotel Quadrifolio - Opción económica en el corazón de Getsemaní"
+            ]
+        )
+    
+    # Respuesta por defecto
+    return TravelRecommendation(
+        destination="Lisboa, Portugal",
+        weather="Clima suave y soleado, 22-26°C. Perfecto para explorar la ciudad a pie.",
+        activities=[
+            "Recorrer el barrio de Alfama en tranvía amarillo",
+            "Degustar pasteles de Belém originales",
+            "Mirador de São Jorge con vistas panorámicas",
+            "Vida nocturna en Bairro Alto con música fado en vivo"
+        ],
+        hotels=[
+            "Memmo Alfama Hotel - Boutique con terraza panorámica",
+            "Pestana Palace Lisboa - Palacio del siglo XIX convertido en hotel",
+            "The Independente Hostel & Suites - Diseño moderno con excelente ubicación"
+        ]
+    )
 
-if __name__ == '__main__':
-    print("🚀 Starting test server on port 8000...")
+@app.get("/health")
+async def health_check():
+    """Endpoint de health check"""
+    postgres = test_postgres()
+    rabbit = test_rabbitmq()
+    
+    return {
+        "status": "running",
+        "postgres": postgres,
+        "rabbitmq": rabbit
+    }
+
+if __name__ == "__main__":
+    import uvicorn
+    print("🚀 Starting FastAPI server on port 8000...")
     print("📍 Visit: http://localhost:8000/health")
-    server = HTTPServer(('0.0.0.0', 8000), Handler)
-    server.serve_forever()
+    print("📍 API docs: http://localhost:8000/docs")
+    uvicorn.run(app, host="0.0.0.0", port=8080)
