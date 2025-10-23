@@ -18,6 +18,11 @@ La información se almacena y gestiona en una base de datos PostgreSQL, desplega
 A diferencia de un generador tradicional que entrega un texto fijo, SmartRoute permite que los itinerarios se actualicen dinámicamente cuando cambian las condiciones del entorno (por ejemplo, si el clima se altera).
 
 ## Ejecucion
+
+Levantamos el contenedor de Ollama: <br>
+
+`docker run -d --gpus=all -v ollama:/root/.ollama -p 11434:11434 --name ollama ollama/ollama`
+
 Para ejecutar el proyecto se tiene que ejecutar primero el backend, nos ubicamos en la carpeta raiz del proyecto y ejecutamos <br>
 `docker compose up -d`
 
@@ -27,5 +32,6 @@ Posteriormente en otra terminal ejecutamos el frontend, para esto nos ubicamos e
 `npm run dev`
 
 con esto ya se conectan los 2
+
 
 
