@@ -32,7 +32,7 @@ const Index = () => {
     
     try {
       // Conectar al backend Python en localhost:8000
-      const response = await fetch('http://localhost:8080/api/travel-recommendations', {
+      const response = await fetch('http://api.localhost/api/travel-recommendations', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

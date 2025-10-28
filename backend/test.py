@@ -24,7 +24,7 @@ app.add_middleware(
 # Incluir las rutas del frontend (opcional, para cuando se necesite)
 app.include_router(frontend_router)
 
-RABBITMQ_URL = os.getenv('RABBITMQ_URL', 'amqp://user:pass@rabbitmq:15672/')
+RABBITMQ_URL = os.getenv('RABBITMQ_URL', 'amqp://user:pass@rabbitmq:5672/')
 DATABASE_URL = os.getenv('DATABASE_URL', 'postgresql://postgres:postgres@postgres:5432/smartroute')
 
 # Modelos Pydantic
