@@ -18,20 +18,20 @@ La información se almacena y gestiona en una base de datos PostgreSQL, desplega
 A diferencia de un generador tradicional que entrega un texto fijo, SmartRoute permite que los itinerarios se actualicen dinámicamente cuando cambian las condiciones del entorno (por ejemplo, si el clima se altera).
 
 ## Ejecucion
-
-Levantamos el contenedor de Ollama: <br>
-
-`docker run -d --gpus=all -v ollama:/root/.ollama -p 11434:11434 --name ollama ollama/ollama`
-
 Para ejecutar el proyecto se tiene que ejecutar primero el backend, nos ubicamos en la carpeta raiz del proyecto y ejecutamos <br>
-`docker compose up -d`
+`docker compose up -d` <br> 
 
-Posteriormente en otra terminal ejecutamos el frontend, para esto nos ubicamos en la carpeta frontend y ejecutamos <br>
+Posteriormente tendremos que descargar el modelo `qwen3` dentro de ollama, para esto entramos al contenedor <br> 
+`docker exec -it ollamaSmartRoute bash`<br> 
+Luego instalamos qwen3 <br> 
+`ollama pull qwen3`<br> 
 
-`npm install modules` <br>
-`npm run dev`
+Con esto ya podemos ejecutar los endpoints 
 
-con esto ya se conectan los 2
+Para ver el consumo en tiempo real de la GPU podemos ejecutar `watch -n 1 nvidia-smi` dentro de Ollama
+
+
+
 
 
 
