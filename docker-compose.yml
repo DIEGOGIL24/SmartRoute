@@ -58,20 +58,40 @@ services:
       - "traefik.http.routers.backend.entrypoints=web"
       - "traefik.http.services.backend.loadbalancer.server.port=8080"
 
-  frontend:
-    build: ./frontend
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.frontend.rule=Host(`localhost`)"
-      - "traefik.http.routers.frontend.entrypoints=web"
-      - "traefik.http.services.frontend.loadbalancer.server.port=3000"
+  # frontend:
+  #   build: ./frontend
+  #   labels:
+  #     - "traefik.enable=true"
+  #     - "traefik.http.routers.frontend.rule=Host(`localhost`)"
+  #     - "traefik.http.routers.frontend.entrypoints=web"
+  #     - "traefik.http.services.frontend.loadbalancer.server.port=3000"
+  #   networks:
+  #     - network
+  #   depends_on:
+  #     - backend
+
+  ollama:
+    image: ollama/ollama
+    container_name: ollamaSmartRoute
+    restart: unless-stopped
     networks:
       - network
-    depends_on:
-      - backend
+    volumes:
+      - ollama:/root/.ollama
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - capabilities: [gpu]
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.ollama.rule=Host(`ollama.localhost`)"
+      - "traefik.http.routers.ollama.entrypoints=web"
+      - "traefik.http.services.ollama.loadbalancer.server.port=11434"
 
 volumes:
   smartRouteData:
+  ollama:
 
 networks:
   network:

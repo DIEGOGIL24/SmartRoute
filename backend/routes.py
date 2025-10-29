@@ -7,7 +7,6 @@ import json
 import psycopg2
 from contextlib import contextmanager
 
-# Crear el router
 router = APIRouter()
 
 RABBITMQ_URL = os.getenv('RABBITMQ_URL', 'amqp://user:pass@rabbitmq:15672/')
@@ -99,7 +98,7 @@ async def get_recommendations(request: TravelRequest):
     if not prompt:
         raise HTTPException(status_code=400, detail="El prompt no puede estar vacío")
     
-    user_id = "43813dff-6c37-4277-94f0-90cb98f50609"
+    user_id = "e257b2cf-5dc3-42bc-8128-afb061f3476c"
     
     # Recomendaciones de montaña
     if any(word in prompt for word in ["montaña", "montana", "frio", "frío", "nieve", "mountain", "ski", "esqui"]):

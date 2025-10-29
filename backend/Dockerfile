@@ -1,11 +1,14 @@
-FROM python:3.11-alpine
+FROM python:3.11-slim
 
 WORKDIR /app
 
-RUN apk add --no-cache postgresql-dev gcc python3-dev musl-dev
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential gcc libpq-dev curl \
+  && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN python -m pip install --upgrade pip setuptools wheel \
+ && pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
