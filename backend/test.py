@@ -1,5 +1,6 @@
 import json
 import os
+import re
 from contextlib import contextmanager
 from typing import Any, Dict, List
 
@@ -9,8 +10,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-import agent
 from routes import router as frontend_router
+from tourism_agent import tourism_agent
+from weather_agent import weather_agent
 
 app = FastAPI(
     title="SmartRoute Test & Diagnostics API",
@@ -40,6 +42,10 @@ class MessageRequestForWeather(BaseModel):
     time: str
 
 
+class MessageRequestForTourism(BaseModel):
+    interests: List[str]
+
+
 class HealthResponse(BaseModel):
     status: str
     postgres: str
@@ -49,7 +55,6 @@ class HealthResponse(BaseModel):
 # Context managers para conexiones
 @contextmanager
 def get_rabbitmq_connection():
-    """Context manager para conexiones RabbitMQ"""
     params = pika.URLParameters(RABBITMQ_URL)
     connection = pika.BlockingConnection(params)
     try:
@@ -60,7 +65,6 @@ def get_rabbitmq_connection():
 
 @contextmanager
 def get_postgres_connection():
-    """Context manager para conexiones PostgreSQL"""
     conn = psycopg2.connect(DATABASE_URL)
     try:
         yield conn
@@ -227,16 +231,83 @@ async def get_messages_weather():
     for message in result:
         city = message["city"]
         time = message["time"]
-        agent_result = agent.crew.kickoff(inputs={
-            'destination': city,
-            'time_range': time
-        })
+        try:
+            days = int(time)
+        except ValueError:
+            match = re.search(r'\d+', time)
+            if match:
+                days = int(match.group())
+            else:
+                days = 5
+        agent_result = weather_agent.run_weather_forecast(city, days)
+        print("Voy a guardar")
+        save_to_postgres(city, time, agent_result)
+        print("Ya guarde")
         outs.append(agent_result)
 
     return {
         "result": outs,
         "queue_info": queue_info
     }
+
+
+@app.get("/viewTourismMessages")
+async def get_messages_tourism():
+    result = read_messages_from_rabbit(1, "tourism")
+    queue_info = get_queue_info()
+
+    outs = []
+    for message in result:
+        interests = message["interests"]  # Ahora es un arreglo
+
+        # Validar que interests sea una lista
+        if not isinstance(interests, list):
+            # Si viene como string, convertirlo a lista
+            if isinstance(interests, str):
+                interests = [interests]
+            else:
+                interests = []
+
+        try:
+            agent_result = tourism_agent.run_tourism_category_selector(
+                user_interests=interests
+            )
+            print("Voy a guardar")
+            print("Ya guardé")
+            outs.append(agent_result)
+        except Exception as e:
+            print(f"Error procesando mensaje: {str(e)}")
+            outs.append({
+                "error": str(e),
+                "interests": interests
+            })
+
+    return {
+        "queue_info": queue_info,
+        "results": outs,
+        "total_processed": len(outs)
+    }
+
+
+def save_to_postgres(destination: str, time: str, out: str) -> None:
+    try:
+        with get_postgres_connection() as conn:
+            cursor = conn.cursor()
+
+            print("Guardando")
+            cursor.execute("""
+                           INSERT INTO prompts (user_id, city, time_str, response_text)
+                           VALUES ('00000000-0000-0000-0000-000000000001',
+                                   %s,
+                                   %s,
+                                   %s);
+                           """, (destination, time, out))
+
+            print("Guardado aaaaa")
+            conn.commit()
+            cursor.close()
+    except Exception as e:
+        print(f"Error guardando en PostgreSQL: {e}")
 
 
 @app.post("/sendMessage")
@@ -255,6 +326,18 @@ async def send_message(message: MessageRequest):
 async def send_message(message: MessageRequestForWeather):
     full_message_json = message.model_dump_json()
     result = send_message_to_rabbit(full_message_json, "weather")
+    queue_info = get_queue_info()
+
+    return {
+        "result": result,
+        "queue_info": queue_info
+    }
+
+
+@app.post("/sendTourismInfo")
+async def send_message(message: MessageRequestForTourism):
+    full_message_json = message.model_dump_json()
+    result = send_message_to_rabbit(full_message_json, "tourism")
     queue_info = get_queue_info()
 
     return {

@@ -1,6 +1,5 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
-
 CREATE TABLE users (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name VARCHAR(100) NOT NULL,
@@ -42,6 +41,15 @@ CREATE TABLE destinations (
     order_index INTEGER DEFAULT 1
 );
 
+CREATE TABLE prompts (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    city VARCHAR(100) NOT NULL,
+    time_str VARCHAR(50) NOT NULL,
+    response_text TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 
 CREATE INDEX idx_itineraries_user ON itineraries(user_id);
 CREATE INDEX idx_weather_itinerary ON weather(itinerary_id);
@@ -77,3 +85,6 @@ SELECT
 FROM itineraries i
 JOIN users u ON i.user_id = u.id
 LEFT JOIN weather w ON w.itinerary_id = i.id;
+
+INSERT INTO users (id, name, email)
+VALUES ('00000000-0000-0000-0000-000000000001', 'testuser', 'testuser@example.com');

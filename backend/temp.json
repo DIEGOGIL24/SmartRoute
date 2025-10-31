@@ -1,0 +1,220 @@
+{
+  "forecasts": [
+    {
+      "date": "2025-10-31 03:00:00",
+      "description": "nubes",
+      "temperature": {
+        "min_temp": 21.57,
+        "max_temp": 21.57
+      },
+      "wind_speed": 1.66
+    },
+    {
+      "date": "2025-10-31 06:00:00",
+      "description": "nubes",
+      "temperature": {
+        "min_temp": 20.62,
+        "max_temp": 21.25
+      },
+      "wind_speed": 1.06
+    },
+    {
+      "date": "2025-10-31 09:00:00",
+      "description": "nubes",
+      "temperature": {
+        "min_temp": 19.92,
+        "max_temp": 20.47
+      },
+      "wind_speed": 0.92
+    },
+    {
+      "date": "2025-10-31 12:00:00",
+      "description": "nubes",
+      "temperature": {
+        "min_temp": 22.04,
+        "max_temp": 22.04
+      },
+      "wind_speed": 0.73
+    },
+    {
+      "date": "2025-10-31 15:00:00",
+      "description": "lluvia ligera",
+      "temperature": {
+        "min_temp": 27.45,
+        "max_temp": 27.45
+      },
+      "wind_speed": 1.03
+    },
+    {
+      "date": "2025-10-31 18:00:00",
+      "description": "lluvia ligera",
+      "temperature": {
+        "min_temp": 29.66,
+        "max_temp": 29.66
+      },
+      "wind_speed": 0.98
+    },
+    {
+      "date": "2025-10-31 21:00:00",
+      "description": "lluvia ligera",
+      "temperature": {
+        "min_temp": 26.06,
+        "max_temp": 26.06
+      },
+      "wind_speed": 0.22
+    },
+    {
+      "date": "2025-11-01 00:00:00",
+      "description": "lluvia ligera",
+      "temperature": {
+        "min_temp": 22.07,
+        "max_temp": 22.07
+      },
+      "wind_speed": 2.09
+    },
+    {
+      "date": "2025-11-01 03:00:00",
+      "description": "nubes",
+      "temperature": {
+        "min_temp": 21.34,
+        "max_temp": 21.34
+      },
+      "wind_speed": 1.75
+    },
+    {
+      "date": "2025-11-01 06:00:00",
+      "description": "lluvia ligera",
+      "temperature": {
+        "min_temp": 20.09,
+        "max_temp": 20.09
+      },
+      "wind_speed": 1.73
+    },
+    {
+      "date": "2025-11-01 09:00:00",
+      "description": "lluvia ligera",
+      "temperature": {
+        "min_temp": 19.94,
+        "max_temp": 19.94
+      },
+      "wind_speed": 1.35
+    },
+    {
+      "date": "2025-11-01 12:00:00",
+      "description": "lluvia ligera",
+      "temperature": {
+        "min_temp": 21.91,
+        "max_temp": 21.91
+      },
+      "wind_speed": 0.8
+    },
+    {
+      "date": "2025-11-01 15:00:00",
+      "description": "lluvia ligera",
+      "temperature": {
+        "min_temp": 27.91,
+        "max_temp": 27.91
+      },
+      "wind_speed": 1.23
+    },
+    {
+      "date": "2025-11-01 18:00:00",
+      "description": "lluvia ligera",
+      "temperature": {
+        "min_temp": 29.3,
+        "max_temp": 29.3
+      },
+      "wind_speed": 1.57
+    },
+    {
+      "date": "2025-11-01 21:00:00",
+      "description": "lluvia ligera",
+      "temperature": {
+        "min_temp": 26.77,
+        "max_temp": 26.77
+      },
+      "wind_speed": 1.04
+    },
+    {
+      "date": "2025-11-02 00:00:00",
+      "description": "lluvia ligera",
+      "temperature": {
+        "min_temp": 21.55,
+        "max_temp": 21.55
+      },
+      "wind_speed": 1.93
+    },
+    {
+      "date": "2025-11-02 03:00:00",
+      "description": "lluvia ligera",
+      "temperature": {
+        "min_temp": 20.85,
+        "max_temp": 20.85
+      },
+      "wind_speed": 1.66
+    },
+    {
+      "date": "2025-11-02 06:00:00",
+      "description": "lluvia ligera",
+      "temperature": {
+        "min_temp": 20.4,
+        "max_temp": 20.4
+      },
+      "wind_speed": 1.54
+    },
+    {
+      "date": "2025-11-02 09:00:00",
+      "description": "nubes",
+      "temperature": {
+        "min_temp": 19.78,
+        "max_temp": 19.78
+      },
+      "wind_speed": 1.73
+    },
+    {
+      "date": "2025-11-02 12:00:00",
+      "description": "muy nuboso",
+      "temperature": {
+        "min_temp": 22.68,
+        "max_temp": 22.68
+      },
+      "wind_speed": 1.01
+    },
+    {
+      "date": "2025-11-02 15:00:00",
+      "description": "algo de nubes",
+      "temperature": {
+        "min_temp": 28.63,
+        "max_temp": 28.63
+      },
+      "wind_speed": 1.13
+    },
+    {
+      "date": "2025-11-02 18:00:00",
+      "description": "lluvia ligera",
+      "temperature": {
+        "min_temp": 30.06,
+        "max_temp": 30.06
+      },
+      "wind_speed": 2.38
+    },
+    {
+      "date": "2025-11-02 21:00:00",
+      "description": "lluvia moderada",
+      "temperature": {
+        "min_temp": 25.3,
+        "max_temp": 25.3
+      },
+      "wind_speed": 2.11
+    },
+    {
+      "date": "2025-11-03 00:00:00",
+      "description": "lluvia ligera",
+      "temperature": {
+        "min_temp": 21.93,
+        "max_temp": 21.93
+      },
+      "wind_speed": 1.6
+    }
+  ]
+}

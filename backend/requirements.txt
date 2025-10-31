@@ -7,3 +7,6 @@ dotenv==0.9.9
 crewai==1.2.0
 ollama==0.6.0
 litellm==1.79.0
+langchain-community==0.4.1
+crewai-tools==1.2.0
+langchain==1.0.3
