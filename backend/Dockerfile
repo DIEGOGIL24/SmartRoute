@@ -12,4 +12,4 @@ RUN python -m pip install --upgrade pip setuptools wheel \
 
 COPY . .
 
-CMD ["python", "test.py"]
+CMD ["python", "main.py"]

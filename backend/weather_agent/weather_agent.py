@@ -1,6 +1,7 @@
 import os
 from crewai import Agent, Task, Crew, LLM
 from .weather_api import get_weather, get_forecast_weather
+from .json_structure import WeatherReport
 from dotenv import load_dotenv
 
 # load_dotenv()
@@ -69,6 +70,7 @@ task1 = Task(
 
     Remember: Add "summary" field to EVERY forecast item.""",
     agent=info_agent,
+    output_pydantic=WeatherReport
 )
 
 crew = Crew(
@@ -79,8 +81,12 @@ crew = Crew(
 
 
 def run_weather_forecast(destination, time_range):
-    result = crew.kickoff(inputs={
+    weather_result = crew.kickoff(inputs={
         'destination': destination,
         'time_range': time_range
     })
-    return result
+
+    if weather_result.pydantic:
+        return weather_result.pydantic.model_dump()
+
+    return weather_result.raw
