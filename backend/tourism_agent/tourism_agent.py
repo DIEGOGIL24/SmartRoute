@@ -11,40 +11,52 @@ llm = LLM(
 
 tourism_agent = Agent(
     role="Experto en Turismo y Selección de Experiencias",
-    goal="""PRIMERO leer el archivo de categorías usando read_categories_file(), 
-    LUEGO analizar los intereses ({user_interests}) y seleccionar SOLO categorías 
-    que existen en el archivo leído.""",
+    goal="""Leer un catálogo de categorías OBLIGATORIAMENTE usando la herramienta 'read_categories_file'.
+        Luego, analizar los intereses del usuario ({user_interests}) y seleccionar las categorías más pertinentes
+        de ESE catálogo leído.""",
+    backstory="""Eres un agente de turismo especializado con amplia experiencia en matching de 
+    perfiles de viajeros con experiencias turísticas. Tu expertise está en comprender las 
+    preferencias, motivaciones y estilos de viaje de los usuarios para recomendar las categorías 
+    de actividades y experiencias que mejor se alineen con sus intereses.
 
-    backstory="""Eres un agente de turismo especializado.
+    Tienes la habilidad de:
+    - Interpretar intereses diversos y encontrar conexiones con categorías turísticas
+    - Identificar categorías primarias y secundarias según relevancia
+    - Justificar cada selección con argumentos sólidos
+    - Detectar intereses implícitos que el usuario podría disfrutar
 
-        REGLAS CRÍTICAS:
-        1. SIEMPRE usar read_categories_file() ANTES de hacer recomendaciones
-        2. NUNCA inventar categorías
-        3. SOLO seleccionar categorías que existen en el archivo
-        4. Si una categoría no existe, buscar la más similar del archivo""",
-
+    IMPORTANTE: Siempre debes leer el archivo de categorías usando la herramienta 
+    read_categories_file antes de hacer cualquier recomendación.""",
     llm=llm,
     tools=[read_categories_file],
     verbose=True,
-    allow_delegation=False 
 )
 
-task1 = Task(
-    description="""Reads the categories file using read_categories_file().
-                Compares the categories in the file with these interests: {user_interests} 
-                Return ONLY categories that exist in the file.""",
+task_read_file = Task(
+    description="""Usa la herramienta 'read_categories_file' para leer el contenido
+    completo del archivo de categorías de turismo. Devuelve el contenido exacto
+    del archivo como un string.""",
+    expected_output="Un string que contiene todas las categorías del archivo, separadas por saltos de línea.",
+    agent=tourism_agent
+)
 
-    expected_output="""JSON with:
-        - categories_from_file: list of all categories read
-        - selected_categories: categories relevant to the user
-        - justification: why you selected each category""",
+task_select_categories = Task(
+    description="""Toma la lista de categorías del contexto.
+    Compara esa lista con los intereses del usuario: {user_interests}.
+    Selecciona ÚNICAMENTE las categorías del contexto que coincidan o sean
+    altamente relevantes para los intereses del usuario.""",
+    expected_output="""Un JSON con:
+    - categories_from_file: lista de todas las categorías leídas del contexto
+    - selected_categories: categorías relevantes para el usuario
+    - justification: por qué seleccionaste cada categoría""",
     agent=tourism_agent,
+    context=[task_read_file], # ¡Esta es la clave!
     output_pydantic=ReportInterests
 )
 
 crew = Crew(
     agents=[tourism_agent],
-    tasks=[task1],
+    tasks=[task_read_file, task_select_categories],
     verbose=True
 )
 
