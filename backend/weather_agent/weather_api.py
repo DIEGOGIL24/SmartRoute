@@ -99,14 +99,18 @@ def get_weather(city: str):
 
         out_data = {
             "name": data["name"],
+            "coordinates": {
+                "lon": data["coord"]["lon"],
+                "lat": data["coord"]["lat"]
+            },
             "weather": {
-                "temperature" : data["main"]["temp"],
+                "temperature": data["main"]["temp"],
                 "status": data["weather"][0]["main"],
-                "description" : data["weather"][0]["description"],
-                "humidity" : data["main"]["humidity"],
+                "description": data["weather"][0]["description"],
+                "humidity": data["main"]["humidity"],
                 "wind_speed": data["wind"]["speed"],
-                "rain" : data.get("rain", {}).get("1h", 0),
-                "clouds" : data["clouds"]["all"],
+                "rain": data.get("rain", {}).get("1h", 0),
+                "clouds": data["clouds"]["all"],
             }
         }
 
@@ -118,7 +122,7 @@ def get_weather(city: str):
 
 
 if __name__ == '__main__':
-    city = "Yopal, CO"
+    city = "Medellin, CO"
     print("Clima actual")
     print(get_weather.run(city=city))
     print("Pronostico")

@@ -12,7 +12,7 @@ def read_categories_file() -> str:
     """
     try:
         current_dir = os.path.dirname(os.path.abspath(__file__))
-        file_path = os.path.join(current_dir, 'tempcat.txt')
+        file_path = os.path.join(current_dir, 'categories2.txt')
         with open(file_path, 'r', encoding='utf-8') as file:
             content = file.read()
         return content
