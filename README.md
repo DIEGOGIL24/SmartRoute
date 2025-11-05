@@ -17,6 +17,22 @@ La información se almacena y gestiona en una base de datos PostgreSQL, desplega
 
 A diferencia de un generador tradicional que entrega un texto fijo, SmartRoute permite que los itinerarios se actualicen dinámicamente cuando cambian las condiciones del entorno (por ejemplo, si el clima se altera).
 
+## Configuracion
+
+Tenemos que configurar las variables que se van a usar en el proyecto en un archivo `.env` en la carpeta backend, las claves a configurar son las siguientes
+
+```
+DATABASE_URL=postgresql://postgres:postgres@postgres:5432/smartroute
+RABBITMQ_URL=amqp://user:pass@rabbitmq:5672/
+WEATHER_QUEUE=weather
+TOURISM_QUEUE=tourism
+WEATHER_API=API_KEY_OPENWEATHERMAP
+API_KEY_PLACES=API_KEY_GOOGLE_PLACES(NEW)
+AZURE_API_KEY=API_KEY_AZURE_OPENAI
+AZURE_OPENAI_DEPLOYMENT=MODELO_A_USAR
+AZURE_ENDPOINT=ENDPOINT_DE_AZURE_OPENAI
+```
+
 ## Ejecucion
 Para ejecutar el proyecto se tiene que ejecutar primero el backend, nos ubicamos en la carpeta raiz del proyecto y ejecutamos <br>
 `docker compose up -d` <br> 
@@ -29,6 +45,7 @@ Luego instalamos qwen3 <br>
 Con esto ya podemos ejecutar los endpoints 
 
 Para ver el consumo en tiempo real de la GPU podemos ejecutar `watch -n 1 nvidia-smi` dentro de Ollama
+
 
 
 
