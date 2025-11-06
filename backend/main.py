@@ -72,6 +72,10 @@ async def get_itinerary_info():
 
     weather_result = read_messages_from_rabbit(1, os.getenv('WEATHER_QUEUE'))
 
+    agent_result = None
+    city = None
+    time = None
+
     for message in weather_result:
         print(f"Mensaje? {message} \n")
         city = message["city"]
@@ -91,6 +95,7 @@ async def get_itinerary_info():
 
     tourism_result = read_messages_from_rabbit(1, os.getenv('TOURISM_QUEUE'))
 
+    final = []
     tourism_outs = []
     for message in tourism_result:
         interests = message["interests"]
@@ -104,10 +109,12 @@ async def get_itinerary_info():
         agent_result = tourism_agent.run_tourism_category_selector(
             user_interests=interests,
             latitude=lat,
-            longitude=lon
+            longitude=lon,
+            weather=final_result
         )
         print("Voy a guardar")
         print("Ya guardé")
+        final.append(agent_result)
         tourism_outs.append(agent_result)
 
         print("Resultado final de los agentes:\n\n")
@@ -118,8 +125,8 @@ async def get_itinerary_info():
         # "weather_results": weather_outs,
         # "tourism_results": tourism_outs,
         # "total_weather": len(weather_outs),
-        # "total_tourism": len(tourism_outs)
-        "final_result": final_result
+        "total_places": agent_result,
+        "final_result": final
     }
 
 

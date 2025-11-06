@@ -21,3 +21,13 @@ class Place(BaseModel):
 
 class PlacesReport(BaseModel):
     places: List[Place] = Field(description="Lista de lugares encontrados en la búsqueda")
+
+
+##Itinerario JSON model
+
+class TourismAgentResponse(BaseModel):
+    places: List[Place]
+    weather_note: str = Field(
+        ...,
+        description="Explicación de por qué estos lugares fueron seleccionados basándose en el clima y pronóstico"
+    )

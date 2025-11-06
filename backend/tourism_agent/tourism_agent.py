@@ -3,9 +3,10 @@ from pathlib import Path
 
 from crewai import Agent, Task, Crew, LLM
 from dotenv import load_dotenv
+from typing import Any
 
 from .places_api import search_places
-from .tourism_json import ReportInterests, PlacesReport
+from .tourism_json import ReportInterests, PlacesReport, TourismAgentResponse
 from .tourism_tools import read_categories_file
 
 env_path = Path(__file__).resolve().parents[1] / ".env"
@@ -70,14 +71,26 @@ task_search_places = Task(
     tools=[search_places]
 )
 
+select_final_places = Task(
+    description="""Utiliza los lugares seleccionados en el paso anterior.
+    Analiza los lugares encontrados y selecciona SOLO los más acordes segun el clima
+    y pronosticos futuros usando {weather}. (maximo 5 lugares).""",
+    expected_output="""Lista JSON de lugares finales recomendados con una nota al final pero dentro del JSON del todo del porque 
+                    fueron seleccionados esos lugares con base al clima.""",
+    agent=tourism_agent,
+    context=[task_search_places],
+    output_pydantic=TourismAgentResponse,
+    tools=[]
+)
+
 crew = Crew(
     agents=[tourism_agent],
-    tasks=[task_read_categories, task_select_categories, task_search_places],
+    tasks=[task_read_categories, task_select_categories, task_search_places, select_final_places],
     verbose=True
 )
 
 
-def run_tourism_category_selector(user_interests: list, latitude: float, longitude: float):
+def run_tourism_category_selector(user_interests: list, latitude: float, longitude: float, weather: list[Any]):
     """
     Ejecuta el flujo completo de selección de turismo.
 
@@ -85,6 +98,7 @@ def run_tourism_category_selector(user_interests: list, latitude: float, longitu
         user_interests: Lista de intereses del usuario
         latitude: Latitud de la ubicación
         longitude: Longitud de la ubicación
+        weather: Datos del clima y pronóstico
 
     Returns:
         Diccionario con los resultados o string con output raw
@@ -94,10 +108,15 @@ def run_tourism_category_selector(user_interests: list, latitude: float, longitu
     tourism_result = crew.kickoff(inputs={
         'user_interests': interests_str,
         'latitude': latitude,
-        'longitude': longitude
+        'longitude': longitude,
+        'weather': weather
     })
 
-    if tourism_result.pydantic:
-        return tourism_result.pydantic.model_dump()
+    last_task_output = select_final_places.output
 
-    return tourism_result.raw
+    if last_task_output.pydantic:
+        return last_task_output.pydantic.model_dump()
+    elif last_task_output.json_dict:
+        return last_task_output.json_dict
+    else:
+        return last_task_output.raw
