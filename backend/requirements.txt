@@ -10,3 +10,5 @@ litellm==1.79.0
 langchain-community==0.4.1
 crewai-tools==1.2.0
 langchain==1.0.3
+crewai[azure-ai-inference]
+openai

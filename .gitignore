@@ -316,6 +316,9 @@ dist
 # https://plugins.jetbrains.com/plugin/8053-azure-toolkit-for-intellij
 
 ### Python ###
+
+**/.env
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
