@@ -1,26 +1,30 @@
-import os
-from fastapi import APIRouter, HTTPException
-from datetime import datetime, timedelta
-from pydantic import BaseModel
-import pika
 import json
-import psycopg2
+import os
 from contextlib import contextmanager
+from datetime import datetime, timedelta
+
+import pika
+import psycopg2
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
 
 router = APIRouter()
 
 RABBITMQ_URL = os.getenv('RABBITMQ_URL', 'amqp://user:pass@rabbitmq:15672/')
 DATABASE_URL = os.getenv('DATABASE_URL', 'postgresql://postgres:postgres@postgres:5432/smartroute')
 
+
 # Modelos Pydantic
 class TravelRequest(BaseModel):
     prompt: str
+
 
 class TravelRecommendation(BaseModel):
     destination: str
     weather: str | None
     activities: list[str]
     hotels: list[str]
+
 
 # Context managers para conexiones
 @contextmanager
@@ -33,6 +37,7 @@ def get_rabbitmq_connection():
     finally:
         connection.close()
 
+
 @contextmanager
 def get_postgres_connection():
     """Context manager para conexiones PostgreSQL"""
@@ -41,6 +46,7 @@ def get_postgres_connection():
         yield conn
     finally:
         conn.close()
+
 
 # Funciones auxiliares
 def send_message_to_rabbit(message: str) -> None:
@@ -57,6 +63,7 @@ def send_message_to_rabbit(message: str) -> None:
             )
     except Exception as e:
         print(f"Error enviando a RabbitMQ: {e}")
+
 
 def save_to_postgres(destination: str, weather: str, activities: list, hotels: list, user_id: str) -> None:
     """Guarda un itinerario en la tabla itineraries de PostgreSQL"""
@@ -75,9 +82,10 @@ def save_to_postgres(destination: str, weather: str, activities: list, hotels: l
             }, ensure_ascii=False)
 
             cursor.execute("""
-                INSERT INTO itineraries (user_id, destination, start_date, end_date, weather_summary, itinerary_details, created_at, updated_at)
-                VALUES (%s, %s, %s, %s, %s, %s, NOW(), NOW())
-            """, (user_id, destination, start_date, end_date, weather, itinerary_details))
+                           INSERT INTO itineraries (user_id, destination, start_date, end_date, weather_summary,
+                                                    itinerary_details, created_at, updated_at)
+                           VALUES (%s, %s, %s, %s, %s, %s, NOW(), NOW())
+                           """, (user_id, destination, start_date, end_date, weather, itinerary_details))
 
             conn.commit()
             cursor.close()
@@ -94,12 +102,12 @@ async def get_recommendations(request: TravelRequest):
     Este endpoint es para el frontend de la aplicación.
     """
     prompt = request.prompt.lower().strip()
-    
+
     if not prompt:
         raise HTTPException(status_code=400, detail="El prompt no puede estar vacío")
-    
+
     user_id = "e257b2cf-5dc3-42bc-8128-afb061f3476c"
-    
+
     # Recomendaciones de montaña
     if any(word in prompt for word in ["montaña", "montana", "frio", "frío", "nieve", "mountain", "ski", "esqui"]):
         destination_data = {

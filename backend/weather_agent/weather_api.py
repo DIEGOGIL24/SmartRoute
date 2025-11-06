@@ -1,8 +1,12 @@
-import re
+import os
+from pathlib import Path
 
 import requests
 from crewai.tools import tool
+from dotenv import load_dotenv
 
+env_path = Path(__file__).resolve().parents[1] / ".env"
+load_dotenv(dotenv_path=env_path)
 
 @tool
 def get_forecast_weather(place: str, days: int):
@@ -29,7 +33,7 @@ def get_forecast_weather(place: str, days: int):
 
     parameters = {
         "q": place,
-        "appid": "b37abef24c08690c10c25d126959eb4f",
+        "appid": os.getenv("WEATHER_API"),
         "units": "metric",
         "lang": "es"
     }
@@ -86,7 +90,7 @@ def get_weather(city: str):
 
     parameters = {
         "q": city,
-        "appid": "b37abef24c08690c10c25d126959eb4f",
+        "appid": os.getenv("WEATHER_API"),
         "units": "metric",
         "lang": "es"
     }
@@ -119,11 +123,3 @@ def get_weather(city: str):
     except requests.exceptions.RequestException as e:
         print(f"Error al obtener datos: {e}")
         return None
-
-
-if __name__ == '__main__':
-    city = "Medellin, CO"
-    print("Clima actual")
-    print(get_weather.run(city=city))
-    print("Pronostico")
-    print(get_forecast_weather.run(place=city, days=3))

@@ -1,7 +1,6 @@
-import re
+import json
 import os
-
-from dotenv import load_dotenv
+import re
 
 import uvicorn
 from fastapi import FastAPI
@@ -9,14 +8,14 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from api_services import test_postgres, test_rabbitmq, send_message_to_rabbit, read_messages_from_rabbit
 from connections import get_postgres_connection
-from models import MessageRequest, MessageRequestForWeather, MessageRequestForTourism, HealthResponse
+from models import MessageRequest, MessageRequestForWeather, MessageRequestForTourism, HealthResponse, MessageItinerary
 from routes import router as frontend_router
 from tourism_agent import tourism_agent
 from weather_agent import weather_agent
 
 app = FastAPI(
-    title="SmartRoute Test & Diagnostics API",
-    description="API para testing de conexiones con RabbitMQ y PostgreSQL",
+    title="SmartRoute",
+    description="Generador de itinerarios basado en el clima y preferencias turísticas",
     version="1.0.0-test"
 )
 
@@ -43,6 +42,114 @@ async def health_check():
         "rabbitmq": rabbit_status
     }
 
+
+def validate_time_string(time_str: str) -> int:
+    try:
+        days = int(time_str)
+        return days
+    except ValueError:
+        match = re.search(r'\d+', time_str)
+        if match:
+            return int(match.group())
+        else:
+            return 5
+
+
+def extract_coordinates(agent_result):
+    try:
+        lat = float(agent_result["current"]["coordinates"]["lat"])
+        lon = float(agent_result["current"]["coordinates"]["lon"])
+        print(f"Coordenadas extraídas: lat={lat}, lon={lon}")
+        return [lat, lon]
+    except (KeyError, TypeError, ValueError) as e:
+        print(f"Error extrayendo coordenadas: {e}")
+        return [None, None]
+
+
+@app.get("/getItineraryInfo")
+async def get_itinerary_info():
+    final_result = []
+
+    weather_result = read_messages_from_rabbit(1, os.getenv('WEATHER_QUEUE'))
+
+    for message in weather_result:
+        print(f"Mensaje? {message} \n")
+        city = message["city"]
+        time = message["time"]
+        days = validate_time_string(time)
+        agent_result = weather_agent.run_weather_forecast(city, days)
+
+    lat, lon = extract_coordinates(agent_result)
+
+    print("Resultado del agente del clima:\n\n")
+    print(agent_result)
+    final_result.append(agent_result)
+
+    print("Voy a guardar")
+    # save_to_postgres(city, time, agent_result)
+    print("Ya guarde")
+
+    tourism_result = read_messages_from_rabbit(1, os.getenv('TOURISM_QUEUE'))
+
+    tourism_outs = []
+    for message in tourism_result:
+        interests = message["interests"]
+
+        if not isinstance(interests, list):
+            if isinstance(interests, str):
+                interests = [interests]
+            else:
+                interests = []
+
+        agent_result = tourism_agent.run_tourism_category_selector(
+            user_interests=interests,
+            latitude=lat,
+            longitude=lon
+        )
+        print("Voy a guardar")
+        print("Ya guardé")
+        tourism_outs.append(agent_result)
+
+        print("Resultado final de los agentes:\n\n")
+        print(agent_result)
+        final_result.append(agent_result)
+
+    return {
+        # "weather_results": weather_outs,
+        # "tourism_results": tourism_outs,
+        # "total_weather": len(weather_outs),
+        # "total_tourism": len(tourism_outs)
+        "final_result": final_result
+    }
+
+
+@app.post("/sendItineraryInfo")
+async def send_itinerary_info(message: MessageItinerary):
+    weather_message = {
+        "city": message.city,
+        "time": message.time
+    }
+    weather_result = send_message_to_rabbit(
+        json.dumps(weather_message),
+        os.getenv('WEATHER_QUEUE')
+    )
+
+    tourism_message = {
+        "interests": message.interests
+    }
+    tourism_result = send_message_to_rabbit(
+        json.dumps(tourism_message),
+        os.getenv('TOURISM_QUEUE')
+    )
+
+    return {
+        "weather_queue_result": weather_result,
+        "tourism_queue_result": tourism_result,
+        "status": "Messages sent successfully"
+    }
+
+
+##Endpooints de prueba
 
 @app.get("/viewMessages")
 async def get_messages():
@@ -98,7 +205,9 @@ async def get_messages_tourism():
 
         try:
             agent_result = tourism_agent.run_tourism_category_selector(
-                user_interests=interests
+                user_interests=interests,
+                latitude=5.5353,
+                longitude=-73.3678
             )
             print("Voy a guardar")
             print("Ya guardé")

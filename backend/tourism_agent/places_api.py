@@ -12,6 +12,7 @@ load_dotenv(dotenv_path=env_path)
 API_KEY = os.getenv('API_KEY_PLACES')
 radius = 11000
 
+
 @tool
 def search_places(categories: List[str], latitude: float, longitude: float):
     """
@@ -58,6 +59,7 @@ def search_places(categories: List[str], latitude: float, longitude: float):
         data = response.json()
 
         if 'places' in data:
+            places_found = []
             print(f"✅ Encontrados {len(data['places'])} lugares:\n")
 
             for i, place in enumerate(data['places'], 1):
@@ -71,11 +73,22 @@ def search_places(categories: List[str], latitude: float, longitude: float):
                 print(f"   ⭐ {rating}")
                 print(f"   🏷️  {tipos}\n")
 
+                places_found.append({
+                    'name': nombre,
+                    'address': direccion,
+                    'rating': rating,
+                    'types': place.get('types', [])
+                })
+
+            return places_found
+
         else:
             print("❌ No se encontraron lugares")
+            return []
     else:
         print(f"❌ Error {response.status_code}")
         print(response.text)
+        return []
 
 
 if __name__ == "__main__":

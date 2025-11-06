@@ -1,90 +1,100 @@
-from crewai import Agent, Task, Crew, LLM
-from .tourism_tools import read_categories_file
-from .tourism_json import ReportInterests
-from .places_api import search_places
+import os
+from pathlib import Path
 
-# load_dotenv()
+from crewai import Agent, Task, Crew, LLM
+from dotenv import load_dotenv
+
+from .places_api import search_places
+from .tourism_json import ReportInterests, PlacesReport
+from .tourism_tools import read_categories_file
+
+env_path = Path(__file__).resolve().parents[1] / ".env"
+load_dotenv(dotenv_path=env_path)
 
 llm = LLM(
-    model="ollama/qwen3",
-    base_url="http://ollama:11434"
+    model=os.getenv("AZURE_OPENAI_DEPLOYMENT"),
+    api_key=os.getenv("AZURE_API_KEY"),
+    base_url=os.getenv("AZURE_ENDPOINT"),
+    api_version="2024-12-01-preview"
 )
 
 tourism_agent = Agent(
-    role="Experto en Turismo y Selección de Experiencias",
-    goal="""Leer un catálogo de categorías OBLIGATORIAMENTE usando la herramienta 'read_categories_file'.
-        Luego, analizar los intereses del usuario ({user_interests}) y seleccionar las categorías más pertinentes
-        de ESE catálogo leído.""",
-    backstory="""Eres un agente de turismo especializado con amplia experiencia en matching de 
-    perfiles de viajeros con experiencias turísticas. Tu expertise está en comprender las 
-    preferencias, motivaciones y estilos de viaje de los usuarios para recomendar las categorías 
-    de actividades y experiencias que mejor se alineen con sus intereses.
+    role="Experto en Turismo",
+    goal="Analizar intereses del usuario y encontrar lugares turísticos relevantes cercanos",
+    backstory="""Eres un agente especializado en turismo que:
+    1. Lee catálogos de categorías turísticas
+    2. Analiza intereses de usuarios y encuentra las mejores coincidencias
+    3. Busca lugares específicos que se alineen con esas preferencias
 
-    Tienes la habilidad de:
-    - Interpretar intereses diversos y encontrar conexiones con categorías turísticas
-    - Identificar categorías primarias y secundarias según relevancia
-    - Justificar cada selección con argumentos sólidos
-    - Detectar intereses implícitos que el usuario podría disfrutar
-
-    IMPORTANTE: Siempre debes leer el archivo de categorías usando la herramienta 
-    read_categories_file antes de hacer cualquier recomendación.""",
+    Trabajas de forma metódica y precisa, usando las herramientas disponibles.""",
     llm=llm,
-    tools=[read_categories_file],
-    verbose=True,
+    tools=[read_categories_file, search_places],
+    verbose=True
 )
 
-task_read_file = Task(
-    description="""Usa la herramienta 'read_categories_file' para leer el contenido
-    completo del archivo de categorías de turismo. Devuelve el contenido exacto
-    del archivo como un string.""",
-    expected_output="Un string que contiene todas las categorías del archivo, separadas por saltos de línea.",
-    agent=tourism_agent
+task_read_categories = Task(
+    description="""Lee el archivo de categorías usando la herramienta 'read_categories_file'.
+
+    Devuelve todo el contenido del archivo tal como aparece.""",
+    expected_output="Contenido completo del archivo de categorías",
+    agent=tourism_agent,
+    tools=[read_categories_file]
 )
 
 task_select_categories = Task(
-    description="""Toma la lista de categorías extraida de la tarea anterior.
-    Compara esa lista con los intereses del usuario: {user_interests}.
-    Selecciona ÚNICAMENTE las categorías del contexto que coincidan o sean
-    altamente relevantes para los intereses del usuario.""",
-    expected_output="""Un JSON con:
-    - selected_categories: categorías relevantes para el usuarioa""",
+    description="""Analiza los intereses del usuario: {user_interests}
+
+    Revisa las categorías disponibles del contexto anterior.
+    Identifica las categorías más relevantes para los intereses mencionados.
+
+    Utiliza los nombres exactos de las categorías que aparecen en el archivo.""",
+    expected_output="JSON con campo 'selected_categories' conteniendo lista de categorías relevantes",
     agent=tourism_agent,
-    context=[task_read_file],
-    output_pydantic=ReportInterests
+    output_pydantic=ReportInterests,
+    context=[task_read_categories]
 )
 
 task_search_places = Task(
-    description="""La tarea anterior seleccionó categorías relevantes.
+    description="""Utiliza las categorías seleccionadas en el paso anterior.
 
-    Usa la herramienta 'search_places' para buscar lugares cercanos que pertenezcan 
-    a esas categorías.
+    Llama a la herramienta 'search_places' con:
+    - categories: las categorías de la tarea anterior
+    - latitude: {latitude}
+    - longitude: {longitude}
 
-    PARÁMETROS:
-    - categories: Toma la lista 'selected_categories' del resultado anterior
-    - latitude: 6.2518
-    - longitude: -75.5636
-
-    IMPORTANTE: 
-    - Llama a la herramienta UNA VEZ pasando TODAS las categorías seleccionadas
-    - La herramienta devolverá lugares para todas las categorías""",
-    expected_output="Lista de lugares encontrados en formato JSON con nombre, dirección, categoría y rating",
+    Realiza una única búsqueda con estos parámetros.""",
+    expected_output="Lista JSON de lugares encontrados",
     agent=tourism_agent,
     context=[task_select_categories],
+    output_pydantic=PlacesReport,
     tools=[search_places]
 )
 
 crew = Crew(
     agents=[tourism_agent],
-    tasks=[task_read_file, task_select_categories, task_search_places],
+    tasks=[task_read_categories, task_select_categories, task_search_places],
     verbose=True
 )
 
 
-def run_tourism_category_selector(user_interests: list):
+def run_tourism_category_selector(user_interests: list, latitude: float, longitude: float):
+    """
+    Ejecuta el flujo completo de selección de turismo.
+
+    Args:
+        user_interests: Lista de intereses del usuario
+        latitude: Latitud de la ubicación
+        longitude: Longitud de la ubicación
+
+    Returns:
+        Diccionario con los resultados o string con output raw
+    """
     interests_str = ", ".join(user_interests)
 
     tourism_result = crew.kickoff(inputs={
-        'user_interests': interests_str
+        'user_interests': interests_str,
+        'latitude': latitude,
+        'longitude': longitude
     })
 
     if tourism_result.pydantic:

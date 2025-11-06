@@ -1,10 +1,12 @@
-from pydantic import BaseModel, Field
 from typing import List, Dict, Any
+
+from pydantic import BaseModel, Field
 
 
 class Temperature(BaseModel):
     min_temp: float
     max_temp: float
+
 
 class DailyForecast(BaseModel):
     date: str = Field(description="from API")
@@ -15,9 +17,11 @@ class DailyForecast(BaseModel):
     clouds: int = Field(description="from API")
     summary: str = Field(description="YOUR ONE-SENTENCE RECOMMENDATION HERE")
 
+
 class ForecastReport(BaseModel):
     city: str = Field(description="city name")
     forecasts: List[DailyForecast]
+
 
 class WeatherReport(BaseModel):
     current: Dict[str, Any] = Field(description="<result from get_weather tool>")

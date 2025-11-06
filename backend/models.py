@@ -16,6 +16,12 @@ class MessageRequestForTourism(BaseModel):
     interests: List[str]
 
 
+class MessageItinerary(BaseModel):
+    city: str
+    time: str
+    interests: List[str]
+
+
 class HealthResponse(BaseModel):
     status: str
     postgres: str

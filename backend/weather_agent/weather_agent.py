@@ -1,16 +1,20 @@
 import os
+from pathlib import Path
+
 from crewai import Agent, Task, Crew, LLM
-from .weather_api import get_weather, get_forecast_weather
-from .json_structure import WeatherReport
 from dotenv import load_dotenv
 
-# load_dotenv()
-#
-# os.environ["OPEN_WEATHER_APP"] = os.getenv("OPEN_WEATHER_APP")
+from .json_structure import WeatherReport
+from .weather_api import get_weather, get_forecast_weather
+
+env_path = Path(__file__).resolve().parents[1] / ".env"
+load_dotenv(dotenv_path=env_path)
 
 llm = LLM(
-    model="ollama/qwen3",
-    base_url="http://ollama:11434"
+    model=os.getenv("AZURE_OPENAI_DEPLOYMENT"),
+    api_key=os.getenv("AZURE_API_KEY"),
+    base_url=os.getenv("AZURE_ENDPOINT"),
+    api_version="2024-12-01-preview"
 )
 
 info_agent = Agent(
@@ -22,7 +26,7 @@ info_agent = Agent(
        to retrieve actual weather information from OpenWeatherMap API.""",
     llm=llm,
     tools=[get_weather, get_forecast_weather],
-    verbose=True,
+    # verbose=True,
 )
 
 task1 = Task(
@@ -76,7 +80,7 @@ task1 = Task(
 crew = Crew(
     agents=[info_agent],
     tasks=[task1],
-    verbose=True
+    # verbose=True
 )
 
 
