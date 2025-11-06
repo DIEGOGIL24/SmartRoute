@@ -33,6 +33,9 @@ AZURE_OPENAI_DEPLOYMENT=MODELO_A_USAR
 AZURE_ENDPOINT=ENDPOINT_DE_AZURE_OPENAI
 ```
 
+La API KEY para los lugares se puede obtener en: https://developers.google.com/maps/documentation/places/web-service/get-api-key?hl=es-419
+
+
 ## Ejecucion
 Para ejecutar el proyecto se tiene que ejecutar primero el backend, nos ubicamos en la carpeta raiz del proyecto y ejecutamos <br>
 `docker compose up -d` <br> 
@@ -45,6 +48,7 @@ Luego instalamos qwen3 <br>
 Con esto ya podemos ejecutar los endpoints 
 
 Para ver el consumo en tiempo real de la GPU podemos ejecutar `watch -n 1 nvidia-smi` dentro de Ollama
+
 
 
 
