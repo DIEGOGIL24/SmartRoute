@@ -17,7 +17,7 @@ const Index = () => {
           <div className="flex items-center gap-3 mb-4">
             <Plane className="w-10 h-10 md:w-12 md:h-12 text-primary" />
             <h1 className="text-4xl md:text-6xl font-bold text-white drop-shadow-lg">
-              TravelAI
+              SmartRoute
             </h1>
           </div>
           <p className="text-lg md:text-xl text-white/90 max-w-2xl drop-shadow-md">

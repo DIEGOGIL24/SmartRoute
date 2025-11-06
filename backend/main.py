@@ -132,6 +132,9 @@ async def get_itinerary_info():
 
 @app.post("/sendItineraryInfo")
 async def send_itinerary_info(message: MessageItinerary):
+    print(f"Prueba {message.city}")
+    print(f"{message.time}")
+    print(f"{message.interests}")
     weather_message = {
         "city": message.city,
         "time": message.time
