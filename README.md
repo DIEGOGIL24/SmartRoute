@@ -44,25 +44,8 @@ Tunja, 2025
 
 ## Arquitectura del Sistema
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                         Traefik (Balanceador)               │
-│                     http://localhost:80                     │
-└────────┬────────────────────┬────────────────┬──────────────┘
-         │                    │                │
-    ┌────▼─────┐      ┌──────▼───────┐   ┌───▼────────┐
-    │ Frontend │      │   Backend    │   │  RabbitMQ  │
-    │  (React) │      │  (FastAPI)   │   │ Management │
-    │ :3000    │      │    :8080     │   │   :15672   │
-    └──────────┘      └──────┬───────┘   └────────────┘
-                             │
-                   ┌─────────┼─────────┐
-                   │         │         │
-              ┌────▼───┐ ┌──▼────┐ ┌──▼─────┐
-              │PostgreSQL│ │Ollama │ │RabbitMQ│
-              │  :5432  │ │:11434 │ │ :5672  │
-              └─────────┘ └───────┘ └────────┘
-```
+<img width="2300" height="1671" alt="Diagrama en blanco" src="https://github.com/user-attachments/assets/069cd149-1a01-4f75-98fb-802f9a2c9315" />
+
 
 ### Componentes
 
@@ -783,3 +766,4 @@ docker exec smartroute-postgres-1 pg_dump -U postgres smartroute > backup.sql
 - [Google Places API](https://developers.google.com/maps/documentation/places/web-service)
 
 ---
+
