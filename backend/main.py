@@ -94,10 +94,6 @@ async def get_itinerary_info():
     print(weather_result)
     final_result.append(weather_result)
 
-    print("Voy a guardar")
-    # save_to_postgres(city, time, agent_result)
-    print("Ya guarde")
-
     tourism_messages = read_messages_from_rabbit(1, os.getenv('TOURISM_QUEUE'))
 
     for message in tourism_messages:
@@ -134,6 +130,16 @@ async def get_itinerary_info():
 
     print("Aca va la salida")
     print(out)
+
+    print("Voy a guardar")
+    save_to_postgres(
+        city=city,
+        time_str=time,
+        weather_data=weather_result,
+        tourism_data=tourism_result,
+        itinerary_text=out
+    )
+    print("Ya guarde")
 
     print(type(out))
 
@@ -197,9 +203,6 @@ async def get_messages_weather():
             else:
                 days = 5
         agent_result = weather_agent.run_weather_forecast(city, days)
-        print("Voy a guardar")
-        save_to_postgres(city, time, agent_result)
-        print("Ya guarde")
         outs.append(agent_result)
 
     return {
@@ -244,26 +247,96 @@ async def get_messages_tourism():
         "total_processed": len(outs)
     }
 
-
-def save_to_postgres(destination: str, time: str, out: str) -> None:
+def save_to_postgres(city: str, time_str: str, weather_data: str, tourism_data: str, itinerary_text: str) -> None:
+    """
+    Guarda los datos del itinerario en todas las tablas relacionadas.
+    """
     try:
         with get_postgres_connection() as conn:
             cursor = conn.cursor()
 
-            print("Guardando")
-            cursor.execute("""
-                           INSERT INTO prompts (user_id, city, time_str, response_text)
-                           VALUES ('00000000-0000-0000-0000-000000000001',
-                                   %s,
-                                   %s,
-                                   %s);
-                           """, (destination, time, out))
+            # 1. Usar el user_id existente (puedes cambiarlo por el real del usuario actual)
+            user_id = '00000000-0000-0000-0000-000000000001'
 
-            print("Guardado aaaaa")
+            # 2. Calcular fechas de inicio y fin basadas en time_str
+            from datetime import datetime, timedelta
+            start_date = datetime.now().date()
+
+            # Extraer los días del time_str (asume formato como "3 days", "1 week", etc.)
+            days = validate_time_string(time_str)
+            end_date = start_date + timedelta(days=days)
+
+            # 3. Insertar en la tabla itineraries y obtener el ID generado
+            print("Insertando itinerario...")
+            cursor.execute("""
+                           INSERT INTO itineraries (user_id, destination, start_date, end_date, weather_summary,
+                                                    itinerary_details)
+                           VALUES (%s, %s, %s, %s, %s, %s) RETURNING id;
+                           """, (user_id, city, start_date, end_date, str(weather_data)[:500], itinerary_text))
+
+            itinerary_id = cursor.fetchone()[0]
+            print(f"Itinerario insertado con ID: {itinerary_id}")
+
+            # 4. Insertar en la tabla weather
+            print("Insertando datos del clima...")
+            try:
+                # Intenta parsear weather_data si es JSON
+                import json
+                if isinstance(weather_data, str):
+                    weather_json = json.loads(weather_data) if weather_data.startswith('{') else {
+                        "forecast": weather_data}
+                else:
+                    weather_json = weather_data
+
+                temperature = weather_json.get('temperature', None)
+                description = weather_json.get('description', str(weather_data)[:255])
+                forecast = json.dumps(weather_json) if isinstance(weather_json, dict) else str(weather_data)
+
+            except:
+                temperature = None
+                description = str(weather_data)[:255]
+                forecast = json.dumps({"raw": str(weather_data)})
+
+            cursor.execute("""
+                           INSERT INTO weather (itinerary_id, temperature, description, forecast)
+                           VALUES (%s, %s, %s, %s::jsonb);
+                           """, (itinerary_id, temperature, description, forecast))
+
+            print("Datos del clima insertados")
+
+            # 5. Insertar en la tabla destinations
+            print("Insertando destino...")
+            try:
+                # Intenta parsear tourism_data si es JSON o tiene actividades
+                if isinstance(tourism_data, str):
+                    tourism_json = json.loads(tourism_data) if tourism_data.startswith('{') or tourism_data.startswith(
+                        '[') else {"activities": tourism_data}
+                else:
+                    tourism_json = tourism_data
+
+                activities = tourism_json if isinstance(tourism_json, (dict, list)) else {
+                    "activities": str(tourism_data)}
+
+            except:
+                activities = {"activities": str(tourism_data)}
+
+            cursor.execute("""
+                           INSERT INTO destinations (itinerary_id, city, activities, estimated_weather, order_index)
+                           VALUES (%s, %s, %s::jsonb, %s, %s);
+                           """, (itinerary_id, city, json.dumps(activities), description, 1))
+
+            print("Destino insertado")
+
+            # 6. Commit de todas las transacciones
             conn.commit()
             cursor.close()
+
+            print(f"✅ Todos los datos guardados exitosamente. Itinerary ID: {itinerary_id}")
+
     except Exception as e:
-        print(f"Error guardando en PostgreSQL: {e}")
+        print(f"❌ Error guardando en PostgreSQL: {e}")
+        import traceback
+        traceback.print_exc()
 
 
 @app.post("/sendMessage")
