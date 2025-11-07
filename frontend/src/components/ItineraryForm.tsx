@@ -23,53 +23,85 @@ export const ItineraryForm = () => {
             .map(s => s.trim())
             .filter(Boolean);
 
+        const API_BASE = "http://api.localhost";
+        const controller = new AbortController();
+        const timeoutMs = 600000;
+        const t = setTimeout(() => controller.abort(), timeoutMs);
+
         setIsLoading(true);
 
-        const API_BASE = "http://api.localhost";
+        // Función auxiliar para leer el detalle del error del backend
+        const readError = async (res: Response) => {
+            let detail = `HTTP ${res.status} ${res.statusText}`;
+            try {
+                const ct = res.headers.get("content-type") || "";
+                if (ct.includes("application/json")) {
+                    const j = await res.json();
+                    detail = (j?.detail || j?.message || JSON.stringify(j));
+                } else {
+                    const txt = await res.text();
+                    if (txt) detail = txt;
+                }
+            } catch { /* ignorar problemas leyendo el cuerpo */
+            }
+            return detail;
+        };
 
-        const sendRes = await fetch(`${API_BASE}/sendItineraryInfo`, {
-            method: "POST",
-            headers: {"Content-Type": "application/json"},
-            body: JSON.stringify({
-                city,
-                time: String(dateRange),     // tu back acepta string o número; enviamos el número como string
-                interests: interestsArray
-            })
-        });
-        if (!sendRes.ok) throw new Error("Error enviando datos al backend");
+        try {
+            // 2) POST
+            const sendRes = await fetch(`${API_BASE}/sendItineraryInfo`, {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({
+                    city,
+                    // OJO: si tu backend espera número, envía Number(dateRange)
+                    time: String(dateRange),
+                    interests: interestsArray
+                }),
+                signal: controller.signal
+            });
 
-        const getRes = await fetch(`${API_BASE}/getItineraryInfo`);
-        if (!getRes.ok) throw new Error("Error obteniendo el itinerario");
+            if (!sendRes.ok) {
+                const detail = await readError(sendRes);
+                // Ejemplo de mapeo específico útil con 422 que ya viste
+                const friendly =
+                    sendRes.status === 422
+                        ? `Datos inválidos (422). Verifica el payload (tipos/campos). Detalle: ${detail}`
+                        : `Error enviando datos al backend. Detalle: ${detail}`;
+                setItinerary(`❌ ${friendly}`);
+                return; // cortar flujo y dejar de cargar en finally
+            }
 
-        const data = await getRes.json();
+            // 3) GET
+            const getRes = await fetch(`${API_BASE}/getItineraryInfo`, {
+                signal: controller.signal
+            });
 
-        // Simular llamada a API (aquí se conectará con tu backend/IA)
-        setTimeout(() => {
-            const mockItinerary = `🌍 Itinerario para ${city}\n📅 Período: ${dateRange}\n\n
-            ✨ Basado en tus intereses en ${interests}, aquí está tu itinerario personalizado:\n\n
-            Día 1:\n
-            - Mañana: Visita guiada por el centro histórico, explorando monumentos relacionados con ${interests}\n
-            - Tarde: Tour gastronómico por los mercados locales\n
-            - Noche: Cena en restaurante típico con vista panorámica\n\n
-            Día 2:\n
-            - Mañana: Actividad especial de ${interests}\n
-            - Tarde: Tiempo libre para explorar tiendas locales\n
-            - Noche: Espectáculo cultural tradicional\n\n
-            Día 3:\n
-            - Mañana: Excursión a los alrededores de ${city}\n
-            - Tarde: Visita a museos temáticos\n
-            - Noche: Paseo nocturno por las calles principales\n\n
-            🌡️ Clima esperado: Soleado con temperaturas agradables\n\n
-            💡 Recomendaciones adicionales:\n
-            - Lleva ropa cómoda para caminar\n
-            - No olvides protector solar\n
-            - Reserva con anticipación los restaurantes populares`;
+            if (!getRes.ok) {
+                const detail = await readError(getRes);
+                setItinerary(`❌ Error obteniendo el itinerario. Detalle: ${detail}`);
+                return;
+            }
 
+            const data = await getRes.json();
+
+            // 4) Mostrar el resultado real (quita el mock si ya usas el back real)
             const pretty = JSON.stringify(data, null, 2);
             setItinerary(pretty);
+        } catch (err: any) {
+            // 5) Errores de red/timeout/abort
+            if (err?.name === "AbortError") {
+                setItinerary(`⏱️ La solicitud tardó más de ${timeoutMs / 1000}s y se canceló.`);
+            } else {
+                setItinerary(`🚨 Error inesperado: ${err?.message || String(err)}`);
+            }
+        } finally {
+            // 6) Siempre deja de "cargar"
+            clearTimeout(t);
             setIsLoading(false);
-        }, 2000);
+        }
     };
+
 
     return (
         <div className="space-y-8">

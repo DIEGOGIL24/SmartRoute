@@ -12,6 +12,7 @@ from models import MessageRequest, MessageRequestForWeather, MessageRequestForTo
 from routes import router as frontend_router
 from tourism_agent import tourism_agent
 from weather_agent import weather_agent
+from langchain import extract_text, generar_itinerario
 
 app = FastAPI(
     title="SmartRoute",
@@ -65,39 +66,40 @@ def extract_coordinates(agent_result):
         print(f"Error extrayendo coordenadas: {e}")
         return [None, None]
 
-
 @app.get("/getItineraryInfo")
 async def get_itinerary_info():
     final_result = []
 
-    weather_result = read_messages_from_rabbit(1, os.getenv('WEATHER_QUEUE'))
+    weather_messages = read_messages_from_rabbit(1, os.getenv('WEATHER_QUEUE'))
 
     agent_result = None
+    weather_result = None
+    from datetime import datetime
+    tourism_result = None
     city = None
     time = None
 
-    for message in weather_result:
+    for message in weather_messages:
         print(f"Mensaje? {message} \n")
         city = message["city"]
         time = message["time"]
         days = validate_time_string(time)
-        agent_result = weather_agent.run_weather_forecast(city, days)
-
-    lat, lon = extract_coordinates(agent_result)
+        print("Agente del clima ha empezado a las " + datetime.now().strftime("%H:%M:%S"))
+        weather_result = weather_agent.run_weather_forecast(city, days)
+        print("Agente del clima ha terminado a las " + datetime.now().strftime("%H:%M:%S"))
+    lat, lon = extract_coordinates(weather_result)
 
     print("Resultado del agente del clima:\n\n")
-    print(agent_result)
-    final_result.append(agent_result)
+    print(weather_result)
+    final_result.append(weather_result)
 
     print("Voy a guardar")
     # save_to_postgres(city, time, agent_result)
     print("Ya guarde")
 
-    tourism_result = read_messages_from_rabbit(1, os.getenv('TOURISM_QUEUE'))
+    tourism_messages = read_messages_from_rabbit(1, os.getenv('TOURISM_QUEUE'))
 
-    final = []
-    tourism_outs = []
-    for message in tourism_result:
+    for message in tourism_messages:
         interests = message["interests"]
 
         if not isinstance(interests, list):
@@ -106,28 +108,33 @@ async def get_itinerary_info():
             else:
                 interests = []
 
-        agent_result = tourism_agent.run_tourism_category_selector(
+        print("Agente de turismo ha empezado a las " + datetime.now().strftime("%H:%M:%S"))
+        tourism_result = tourism_agent.run_tourism_category_selector(
             user_interests=interests,
             latitude=lat,
             longitude=lon,
             weather=final_result
         )
+
+        print("Agente de turismo ha terminado a las " + datetime.now().strftime("%H:%M:%S"))
         print("Voy a guardar")
         print("Ya guardé")
-        final.append(agent_result)
-        tourism_outs.append(agent_result)
+        final_result.append(tourism_result)
 
         print("Resultado final de los agentes:\n\n")
-        print(agent_result)
-        final_result.append(agent_result)
+        print(final_result)
 
-    return {
-        # "weather_results": weather_outs,
-        # "tourism_results": tourism_outs,
-        # "total_weather": len(weather_outs),
-        "total_places": agent_result,
-        "final_result": final
-    }
+    print("\n\n\n" + str(final_result) + "\n\n\n")
+
+    print("No se que poner "+ "\n\n\n\n\n\n\n")
+
+    json_string = json.dumps(final_result, ensure_ascii=False)
+    out = extract_text(generar_itinerario(json_string))
+
+    print("Aca va la salida")
+    print(out)
+
+    return out
 
 
 @app.post("/sendItineraryInfo")

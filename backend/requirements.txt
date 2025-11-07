@@ -12,3 +12,4 @@ crewai-tools==1.2.0
 langchain==1.0.3
 crewai[azure-ai-inference]
 openai
+langchain-ollama
