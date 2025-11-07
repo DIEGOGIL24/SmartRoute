@@ -83,11 +83,8 @@ export const ItineraryForm = () => {
                 return;
             }
 
-            const data = await getRes.json();
-
-            // 4) Mostrar el resultado real (quita el mock si ya usas el back real)
-            const pretty = JSON.stringify(data, null, 2);
-            setItinerary(pretty);
+            const data = await getRes.text();
+            setItinerary(data);
         } catch (err: any) {
             // 5) Errores de red/timeout/abort
             if (err?.name === "AbortError") {

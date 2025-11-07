@@ -5,6 +5,7 @@ import re
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import PlainTextResponse
 
 from api_services import test_postgres, test_rabbitmq, send_message_to_rabbit, read_messages_from_rabbit
 from connections import get_postgres_connection
@@ -66,7 +67,7 @@ def extract_coordinates(agent_result):
         print(f"Error extrayendo coordenadas: {e}")
         return [None, None]
 
-@app.get("/getItineraryInfo")
+@app.get("/getItineraryInfo", response_class=PlainTextResponse)
 async def get_itinerary_info():
     final_result = []
 
@@ -133,6 +134,8 @@ async def get_itinerary_info():
 
     print("Aca va la salida")
     print(out)
+
+    print(type(out))
 
     return out
 
