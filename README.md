@@ -40,14 +40,15 @@ La API KEY para los lugares se puede obtener en: https://developers.google.com/m
 Para ejecutar el proyecto se tiene que ejecutar primero el backend, nos ubicamos en la carpeta raiz del proyecto y ejecutamos <br>
 `docker compose up -d` <br> 
 
-Posteriormente tendremos que descargar el modelo `qwen3` dentro de ollama, para esto entramos al contenedor <br> 
+Posteriormente tendremos que descargar el modelo `llama3.1` dentro de ollama, para esto entramos al contenedor <br> 
 `docker exec -it ollamaSmartRoute bash`<br> 
 Luego instalamos qwen3 <br> 
-`ollama pull qwen3`<br> 
+`ollama pull llama3.1`<br> 
 
 Con esto ya podemos ejecutar los endpoints 
 
 Para ver el consumo en tiempo real de la GPU podemos ejecutar `watch -n 1 nvidia-smi` dentro de Ollama
+
 
 
 
