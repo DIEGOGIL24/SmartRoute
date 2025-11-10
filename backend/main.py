@@ -10,7 +10,6 @@ from fastapi.responses import PlainTextResponse
 from api_services import test_postgres, test_rabbitmq, send_message_to_rabbit, read_messages_from_rabbit
 from connections import get_postgres_connection
 from models import MessageRequest, MessageRequestForWeather, MessageRequestForTourism, HealthResponse, MessageItinerary
-from routes import router as frontend_router
 from tourism_agent import tourism_agent
 from weather_agent import weather_agent
 from langchain import extract_text, generar_itinerario
@@ -28,7 +27,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-app.include_router(frontend_router)
 
 
 @app.get("/health", response_model=HealthResponse)
@@ -66,6 +64,7 @@ def extract_coordinates(agent_result):
     except (KeyError, TypeError, ValueError) as e:
         print(f"Error extrayendo coordenadas: {e}")
         return [None, None]
+
 
 @app.get("/getItineraryInfo", response_class=PlainTextResponse)
 async def get_itinerary_info():
@@ -123,7 +122,7 @@ async def get_itinerary_info():
 
     print("\n\n\n" + str(final_result) + "\n\n\n")
 
-    print("No se que poner "+ "\n\n\n\n\n\n\n")
+    print("No se que poner " + "\n\n\n\n\n\n\n")
 
     json_string = json.dumps(final_result, ensure_ascii=False)
     out = extract_text(generar_itinerario(json_string))
@@ -246,6 +245,7 @@ async def get_messages_tourism():
         "results": outs,
         "total_processed": len(outs)
     }
+
 
 def save_to_postgres(city: str, time_str: str, weather_data: str, tourism_data: str, itinerary_text: str) -> None:
     """
